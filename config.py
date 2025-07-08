@@ -26,6 +26,9 @@ DEFAULT_WIDTH = 512
 DEFAULT_HEIGHT = 512
 DEFAULT_SEED = 888  # -1 for random seed, or specific integer for reproducible results
 
+# Current seed that can be modified at runtime
+CURRENT_SEED = DEFAULT_SEED
+
 # Prompt Templates
 PROMPT_PREFIX = "professional portrait photograph of a"
 PROMPT_SUFFIX = "person, high quality, detailed, realistic, photographic style"

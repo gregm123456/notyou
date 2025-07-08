@@ -34,12 +34,13 @@ class PromptBuilder:
             }
         }
     
-    def build_api_payload(self, prompt: str, **overrides) -> Dict:
+    def build_api_payload(self, prompt: str, seed: Optional[int] = None, **overrides) -> Dict:
         """
         Build the API payload for image generation.
         
         Args:
             prompt: Text prompt for image generation
+            seed: Optional seed value (overrides default)
             **overrides: Parameter overrides
             
         Returns:
@@ -47,6 +48,10 @@ class PromptBuilder:
         """
         payload = self.default_params.copy()
         payload["prompt"] = prompt
+        
+        # Override seed if provided
+        if seed is not None:
+            payload["seed"] = seed
         
         # Apply any parameter overrides
         for key, value in overrides.items():

@@ -5,6 +5,7 @@ Application state management for the Not You installation.
 import logging
 from typing import Dict, Optional, Callable, Any
 from threading import Lock
+import random
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,10 @@ class ApplicationState:
         self._state['api_status'] = "idle"
         self._state['last_generation_time'] = None
         
+        # Initialize seed from config
+        from config import DEFAULT_SEED
+        self._state['current_seed'] = DEFAULT_SEED
+    
     def reset_form_data(self):
         """Reset all form data to default values."""
         with self._lock:
@@ -287,6 +292,35 @@ class ApplicationState:
                 self._general_callback('current_prompt', prompt)
             except Exception as e:
                 logger.error(f"Error in general callback: {e}")
+    
+    def set_current_seed(self, seed: int):
+        """
+        Set the current seed for image generation.
+        
+        Args:
+            seed: Seed value for generation
+        """
+        with self._lock:
+            self._state['current_seed'] = seed
+        
+        logger.info(f"Seed updated: {seed}")
+        self._notify_observers('seed_updated', seed)
+    
+    def get_current_seed(self) -> int:
+        """
+        Get the current seed value.
+        
+        Returns:
+            Current seed value
+        """
+        with self._lock:
+            return self._state.get('current_seed', -1)
+    
+    def generate_new_random_seed(self):
+        """Generate and set a new random seed."""
+        new_seed = random.randint(1, 2147483647)  # Max 32-bit signed integer
+        self.set_current_seed(new_seed)
+        return new_seed
     
     def get_state_summary(self) -> Dict[str, Any]:
         """

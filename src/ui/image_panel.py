@@ -10,14 +10,15 @@ from io import BytesIO
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 from kivy.uix.widget import Widget
 from kivy.graphics import Rectangle, Color
 from kivy.clock import Clock
 
 from config import (
     IMAGE_SIZE, PLACEHOLDER_IMAGE, COLOR_BACKGROUND, COLOR_TEXT,
-    COLOR_PRIMARY, PADDING, SPACING, GENERATED_IMAGES_PATH, MAX_ARCHIVED_IMAGES,
-    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL
+    COLOR_PRIMARY, COLOR_ACCENT, PADDING, SPACING, GENERATED_IMAGES_PATH, MAX_ARCHIVED_IMAGES,
+    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, BUTTON_HEIGHT
 )
 from src.utils.error_handling import ErrorHandler
 
@@ -39,6 +40,7 @@ class ImagePanel(BoxLayout):
         # Store references
         self.app_state = app_state
         self.error_handler = ErrorHandler()
+        self.has_generated_image = False  # Track if first image has been generated
         
         # Create UI elements
         self._create_ui()
@@ -59,8 +61,8 @@ class ImagePanel(BoxLayout):
             # Create prompt text display
             self._create_prompt_display()
             
-            # Create status display
-            self._create_status_display()
+            # Create bottom section with status and remix button
+            self._create_bottom_section()
             
         except Exception as e:
             self.error_handler.handle_error(e, "Failed to create image panel UI")
@@ -101,16 +103,51 @@ class ImagePanel(BoxLayout):
         
         self.add_widget(self.prompt_label)
     
-    def _create_status_display(self):
-        """Create the status indicator."""
+    def _create_bottom_section(self):
+        """Create the bottom section with status and remix button."""
+        # Bottom container for status and button
+        bottom_container = BoxLayout(
+            orientation='horizontal',
+            size_hint=(1, 0.1),  # Take 10% of panel height
+            spacing=SPACING
+        )
+        
+        # Status label (left side, takes most space)
         self.status_label = Label(
             text="Ready",
             font_size=12,
             color=COLOR_PRIMARY,
-            size_hint=(1, 0.1)  # Take 10% of panel height
+            size_hint=(0.6, 1),
+            halign='left',
+            valign='middle'
         )
+        self.status_label.bind(size=lambda instance, size: setattr(instance, 'text_size', (size[0], None)))
         
-        self.add_widget(self.status_label)
+        # Spacer to push remix button to the right
+        spacer = Widget(size_hint=(0.2, 1))
+        
+        # Remix button (bottom left)
+        self.remix_button = Button(
+            text="Remix",
+            font_size=FONT_SIZE_SMALL,
+            size_hint=(0.2, 1),
+            height=BUTTON_HEIGHT,
+            background_color=COLOR_ACCENT,
+            opacity=0  # Initially hidden
+        )
+        self.remix_button.bind(on_press=self._on_remix_pressed)
+        
+        # Add elements to bottom container
+        bottom_container.add_widget(self.status_label)
+        bottom_container.add_widget(spacer)
+        bottom_container.add_widget(self.remix_button)
+        
+        self.add_widget(bottom_container)
+    
+    def _create_status_display(self):
+        """Create the status indicator (legacy method for compatibility)."""
+        # This method is kept for compatibility but functionality moved to _create_bottom_section
+        pass
     
     def _update_prompt_text_size(self, instance, size):
         """Update prompt text wrapping based on widget size."""
@@ -120,7 +157,12 @@ class ImagePanel(BoxLayout):
         """Handle image state changes."""
         try:
             self._update_image(image_data)
-            # Don't manually override status - let the generation status observer handle it
+            
+            # Show remix button after first image is generated
+            if image_data and not self.has_generated_image:
+                self.has_generated_image = True
+                self._show_remix_button()
+                
         except Exception as e:
             self.error_handler.handle_error(e, "Error updating image")
     
@@ -301,3 +343,66 @@ class ImagePanel(BoxLayout):
             self.status_label.text = f"Generating{dots}"
         except Exception as e:
             logger.warning(f"Error in generating animation: {e}")
+    
+    def _show_remix_button(self):
+        """Show the remix button with animation."""
+        try:
+            def fade_in(dt):
+                if self.remix_button.opacity < 1.0:
+                    self.remix_button.opacity = min(1.0, self.remix_button.opacity + 0.1)
+                    Clock.schedule_once(fade_in, 0.02)
+            
+            Clock.schedule_once(fade_in, 0.1)
+            logger.info("Remix button shown")
+            
+        except Exception as e:
+            self.error_handler.handle_error(e, "Error showing remix button")
+    
+    def _on_remix_pressed(self, instance):
+        """Handle remix button press."""
+        try:
+            logger.info("Remix button pressed")
+            
+            # Generate new random seed
+            new_seed = self.app_state.generate_new_random_seed()
+            logger.info(f"Generated new seed: {new_seed}")
+            
+            # Get current prompt and trigger regeneration
+            current_prompt = self.app_state.get_current_prompt()
+            if current_prompt:
+                logger.info(f"Regenerating image with new seed and prompt: {current_prompt}")
+                self._trigger_image_regeneration(current_prompt)
+            else:
+                logger.warning("No current prompt available for remix")
+                
+        except Exception as e:
+            self.error_handler.handle_error(e, "Error handling remix button press")
+    
+    def _trigger_image_regeneration(self, prompt):
+        """Trigger image regeneration with current prompt but new seed."""
+        try:
+            # Import here to avoid circular imports
+            from src.api.client import APIClient
+            
+            # Create a new API client instance or get existing one
+            # For simplicity, we'll trigger through the main screen's method
+            # by setting the prompt again which should trigger regeneration
+            
+            # Set generating state
+            self.app_state.set_generating_image(True)
+            
+            # Get parent (main screen) and trigger regeneration
+            parent = self.parent
+            while parent and not hasattr(parent, '_trigger_image_generation'):
+                parent = parent.parent
+            
+            if parent and hasattr(parent, '_trigger_image_generation'):
+                # Use Clock to ensure this runs on main thread
+                Clock.schedule_once(lambda dt: parent._trigger_image_generation(), 0.1)
+            else:
+                logger.error("Could not find main screen to trigger regeneration")
+                self.app_state.set_generating_image(False)
+                
+        except Exception as e:
+            self.error_handler.handle_error(e, "Error triggering image regeneration")
+            self.app_state.set_generating_image(False)

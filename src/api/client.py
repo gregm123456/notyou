@@ -42,13 +42,14 @@ class APIClient:
         
         logger.info(f"API client initialized for {self.base_url}")
     
-    def generate_image(self, prompt: str, on_success: Callable[[bytes], None], 
+    def generate_image(self, prompt: str, app_state, on_success: Callable[[bytes], None], 
                       on_error: Callable[[Exception], None]):
         """
         Generate an image from a text prompt asynchronously.
         
         Args:
             prompt: Text prompt for image generation
+            app_state: Application state for getting current seed
             on_success: Callback for successful generation (receives image bytes)
             on_error: Callback for errors (receives Exception)
         """
@@ -64,7 +65,7 @@ class APIClient:
             # Start generation in separate thread
             thread = threading.Thread(
                 target=self._generate_image_worker,
-                args=(request_id, prompt, on_success, on_error),
+                args=(request_id, prompt, app_state, on_success, on_error),
                 daemon=True
             )
             thread.start()
@@ -73,7 +74,7 @@ class APIClient:
             self.error_handler.handle_error(e, "Error starting image generation")
             on_error(e)
     
-    def _generate_image_worker(self, request_id: int, prompt: str,
+    def _generate_image_worker(self, request_id: int, prompt: str, app_state,
                               on_success: Callable[[bytes], None],
                               on_error: Callable[[Exception], None]):
         """Worker thread for image generation."""
@@ -84,7 +85,7 @@ class APIClient:
                 return
             
             # Prepare API payload
-            payload = self._create_api_payload(prompt)
+            payload = self._create_api_payload(prompt, app_state)
             
             # Check again before making request
             if not self._is_request_active(request_id):
@@ -138,8 +139,11 @@ class APIClient:
         except Exception as e:
             self.error_handler.handle_error(e, "Error cancelling requests")
     
-    def _create_api_payload(self, prompt: str) -> Dict[str, Any]:
+    def _create_api_payload(self, prompt: str, app_state) -> Dict[str, Any]:
         """Create the API request payload."""
+        # Get current seed from app state
+        current_seed = app_state.get_current_seed() if app_state else DEFAULT_SEED
+        
         return {
             "prompt": prompt,
             "negative_prompt": NEGATIVE_PROMPT,
@@ -150,7 +154,7 @@ class APIClient:
             "height": DEFAULT_HEIGHT,
             "batch_size": 1,
             "n_iter": 1,
-            "seed": DEFAULT_SEED,  # Configurable seed from config.py
+            "seed": current_seed,  # Use dynamic seed from app state
             "restore_faces": False,
             "tiling": False,
             "do_not_save_samples": True,

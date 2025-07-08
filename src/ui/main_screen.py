@@ -164,6 +164,7 @@ class MainScreen(BoxLayout):
             # Submit request to API client
             self.api_client.generate_image(
                 prompt=prompt,
+                app_state=self.app_state,
                 on_success=on_success,
                 on_error=on_error
             )
