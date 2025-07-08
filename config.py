@@ -24,6 +24,7 @@ DEFAULT_CFG_SCALE = 2
 DEFAULT_SAMPLER = "Euler a"
 DEFAULT_WIDTH = 512
 DEFAULT_HEIGHT = 512
+DEFAULT_SEED = 888  # -1 for random seed, or specific integer for reproducible results
 
 # Prompt Templates
 PROMPT_PREFIX = "professional portrait photograph of a"

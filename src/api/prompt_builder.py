@@ -6,7 +6,7 @@ import logging
 from typing import Dict, List, Optional
 from config import (
     DEFAULT_STEPS, DEFAULT_CFG_SCALE, DEFAULT_SAMPLER,
-    DEFAULT_WIDTH, DEFAULT_HEIGHT, NEGATIVE_PROMPT
+    DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_SEED, NEGATIVE_PROMPT
 )
 
 
@@ -27,7 +27,7 @@ class PromptBuilder:
             "negative_prompt": NEGATIVE_PROMPT,
             "batch_size": 1,
             "n_iter": 1,
-            "seed": -1,  # Random seed
+            "seed": DEFAULT_SEED,  # Configurable seed from config.py
             "restore_faces": True,
             "override_settings": {
                 "sd_model_checkpoint": None  # Use current model

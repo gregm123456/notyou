@@ -16,7 +16,7 @@ from io import BytesIO
 from config import (
     API_TIMEOUT, MAX_RETRIES, REQUEST_DELAY,
     DEFAULT_STEPS, DEFAULT_CFG_SCALE, DEFAULT_SAMPLER,
-    DEFAULT_WIDTH, DEFAULT_HEIGHT, NEGATIVE_PROMPT
+    DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_SEED, NEGATIVE_PROMPT
 )
 from secrets import API_USERNAME, API_PASSWORD, API_BASE_URL
 from src.utils.error_handling import ErrorHandler
@@ -150,7 +150,7 @@ class APIClient:
             "height": DEFAULT_HEIGHT,
             "batch_size": 1,
             "n_iter": 1,
-            "seed": -1,  # Random seed
+            "seed": DEFAULT_SEED,  # Configurable seed from config.py
             "restore_faces": False,
             "tiling": False,
             "do_not_save_samples": True,
