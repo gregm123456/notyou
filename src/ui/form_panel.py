@@ -90,7 +90,7 @@ class FormPanel(BoxLayout):
     
     def _update_button_text_size(self, instance, size):
         """Update button text wrapping for long option names."""
-        instance.text_size = (size[0] - 20, None)  # Allow height to expand
+        instance.text_size = (size[0] - 20, size[1] - 10)  # Fixed height for wrapping
         instance.halign = 'center'
         instance.valign = 'middle'
     
@@ -208,17 +208,10 @@ class FormPanel(BoxLayout):
                     bg_color = COLOR_PRIMARY
                     text_color = COLOR_TEXT_LIGHT
                 
-                # Calculate compact height based on text length for long options
-                text_height = BUTTON_HEIGHT
-                if len(option) > 30:  # Long text needs a bit more height
-                    text_height = BUTTON_HEIGHT + 10
-                elif len(option) > 45:  # Very long text needs more height
-                    text_height = BUTTON_HEIGHT + 20
-                
                 option_button = Button(
                     text=option,
                     size_hint_y=None,
-                    height=text_height,
+                    height=BUTTON_HEIGHT,
                     background_color=bg_color,
                     color=text_color,
                     font_size=FONT_SIZE_SMALL,
@@ -286,18 +279,12 @@ class FormPanel(BoxLayout):
             if option == "?":
                 button.background_color = COLOR_UNSELECTED
                 button.color = COLOR_TEXT
-                button.height = BUTTON_HEIGHT
             else:
                 button.background_color = COLOR_SELECTED
                 button.color = COLOR_TEXT_LIGHT
                 
-                # Adjust button height for long text
-                if len(option) > 25:
-                    button.height = BUTTON_HEIGHT + 20
-                elif len(option) > 40:
-                    button.height = BUTTON_HEIGHT + 40
-                else:
-                    button.height = BUTTON_HEIGHT
+            # Keep button height consistent
+            button.height = BUTTON_HEIGHT
                 
             # Enable text wrapping for the main button
             button.bind(size=self._update_button_text_size)
