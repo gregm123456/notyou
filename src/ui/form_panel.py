@@ -14,7 +14,9 @@ from kivy.uix.scrollview import ScrollView
 
 from config import (
     COLOR_PRIMARY, COLOR_SECONDARY, COLOR_TEXT, COLOR_BACKGROUND,
-    PADDING, SPACING, BUTTON_HEIGHT, BUTTON_WIDTH_TOUCH
+    COLOR_TEXT_LIGHT, COLOR_SELECTED, COLOR_UNSELECTED,
+    PADDING, SPACING, BUTTON_HEIGHT, BUTTON_WIDTH_TOUCH,
+    FONT_SIZE_LARGE, FONT_SIZE_MEDIUM, FONT_SIZE_SMALL
 )
 from src.data.form_mapping import FormToPromptMapper
 from src.utils.error_handling import ErrorHandler
@@ -53,21 +55,23 @@ class FormPanel(BoxLayout):
             # Create title
             title_label = Label(
                 text="Demographics Form",
-                font_size=24,
+                font_size=FONT_SIZE_LARGE,
                 color=COLOR_TEXT,
                 size_hint=(1, None),
-                height=60,
-                halign='center'
+                height=35,  # Smaller title height
+                halign='center',
+                bold=True
             )
+            title_label.bind(size=title_label.setter('text_size'))
             self.add_widget(title_label)
             
             # Create instruction text
             instruction_label = Label(
                 text="Select any characteristics to generate a portrait.\nNo fields are required.",
-                font_size=14,
+                font_size=FONT_SIZE_SMALL,
                 color=COLOR_TEXT,
                 size_hint=(1, None),
-                height=60,
+                height=35,  # Smaller instruction height
                 halign='center',
                 text_size=(None, None)
             )
@@ -84,13 +88,22 @@ class FormPanel(BoxLayout):
         """Update instruction text wrapping."""
         instance.text_size = (size[0] - 20, None)
     
+    def _update_button_text_size(self, instance, size):
+        """Update button text wrapping for long option names."""
+        instance.text_size = (size[0] - 20, None)  # Allow height to expand
+        instance.halign = 'center'
+        instance.valign = 'middle'
+    
     def _create_form_area(self):
         """Create the scrollable form area with all form fields."""
         # Create scroll view for form fields
         scroll_view = ScrollView(
             size_hint=(1, 1),
             do_scroll_x=False,
-            do_scroll_y=True
+            do_scroll_y=True,
+            bar_width=8,
+            bar_color=COLOR_PRIMARY,
+            bar_inactive_color=COLOR_SECONDARY
         )
         
         # Container for form fields
@@ -98,7 +111,7 @@ class FormPanel(BoxLayout):
             orientation='vertical',
             spacing=SPACING,
             size_hint_y=None,
-            padding=(10, 10)
+            padding=(PADDING, 0)
         )
         form_container.bind(minimum_height=form_container.setter('height'))
         
@@ -123,24 +136,24 @@ class FormPanel(BoxLayout):
     def _create_form_field(self, field_name):
         """Create a single form field widget."""
         try:
-            # Field container
+            # Field container with adaptive height
             field_container = BoxLayout(
                 orientation='vertical',
                 size_hint_y=None,
-                height=120,  # Fixed height for consistency
-                spacing=5
+                spacing=2  # Much tighter spacing
             )
             
-            # Field label
+            # Field label with better styling
             label_text = self.form_mapper.get_field_label(field_name)
             field_label = Label(
                 text=label_text,
-                font_size=16,
+                font_size=FONT_SIZE_SMALL,
                 color=COLOR_TEXT,
                 size_hint=(1, None),
-                height=30,
+                height=20,  # Much smaller label height
                 halign='left',
-                valign='middle'
+                valign='middle',
+                bold=True
             )
             field_label.bind(size=field_label.setter('text_size'))
             field_container.add_widget(field_label)
@@ -148,6 +161,9 @@ class FormPanel(BoxLayout):
             # Create dropdown for field options
             dropdown_button = self._create_dropdown_field(field_name)
             field_container.add_widget(dropdown_button)
+            
+            # Set compact container height
+            field_container.height = 20 + BUTTON_HEIGHT + 4  # label + button + spacing
             
             return field_container
             
@@ -160,29 +176,59 @@ class FormPanel(BoxLayout):
         try:
             options = self.form_mapper.get_field_options(field_name)
             
-            # Create main button
+            # Create main button with better styling
             dropdown_button = Button(
                 text="?",  # Default unselected state
                 size_hint=(1, None),
                 height=BUTTON_HEIGHT,
-                background_color=COLOR_SECONDARY,
+                background_color=COLOR_UNSELECTED,
                 color=COLOR_TEXT,
-                font_size=16
+                font_size=FONT_SIZE_MEDIUM,
+                bold=True,
+                halign='center',
+                valign='middle',
+                text_size=(None, None)
             )
             
-            # Create dropdown
-            dropdown = DropDown()
+            # Enable text wrapping for the main button
+            dropdown_button.bind(size=self._update_button_text_size)
+            
+            # Create dropdown with improved styling
+            dropdown = DropDown(
+                max_height=300  # Limit dropdown height
+            )
             
             # Add options to dropdown
             for option in options:
+                # Determine styling for each option
+                if option == "?":
+                    bg_color = COLOR_UNSELECTED
+                    text_color = COLOR_TEXT
+                else:
+                    bg_color = COLOR_PRIMARY
+                    text_color = COLOR_TEXT_LIGHT
+                
+                # Calculate compact height based on text length for long options
+                text_height = BUTTON_HEIGHT
+                if len(option) > 30:  # Long text needs a bit more height
+                    text_height = BUTTON_HEIGHT + 10
+                elif len(option) > 45:  # Very long text needs more height
+                    text_height = BUTTON_HEIGHT + 20
+                
                 option_button = Button(
                     text=option,
                     size_hint_y=None,
-                    height=BUTTON_HEIGHT,
-                    background_color=COLOR_BACKGROUND if option == "?" else COLOR_PRIMARY,
-                    color=COLOR_TEXT,
-                    font_size=14
+                    height=text_height,
+                    background_color=bg_color,
+                    color=text_color,
+                    font_size=FONT_SIZE_SMALL,
+                    halign='center',
+                    valign='middle',
+                    text_size=(None, None)
                 )
+                
+                # Enable text wrapping for long options
+                option_button.bind(size=self._update_button_text_size)
                 
                 # Bind option selection
                 option_button.bind(
@@ -236,13 +282,25 @@ class FormPanel(BoxLayout):
     def _provide_selection_feedback(self, button, option):
         """Provide visual feedback for option selection."""
         try:
-            # Change button color based on selection
+            # Change button color and text styling based on selection
             if option == "?":
-                button.background_color = COLOR_SECONDARY
+                button.background_color = COLOR_UNSELECTED
+                button.color = COLOR_TEXT
+                button.height = BUTTON_HEIGHT
             else:
-                button.background_color = COLOR_PRIMARY
+                button.background_color = COLOR_SELECTED
+                button.color = COLOR_TEXT_LIGHT
                 
-            # Could add animation here if desired
+                # Adjust button height for long text
+                if len(option) > 25:
+                    button.height = BUTTON_HEIGHT + 20
+                elif len(option) > 40:
+                    button.height = BUTTON_HEIGHT + 40
+                else:
+                    button.height = BUTTON_HEIGHT
+                
+            # Enable text wrapping for the main button
+            button.bind(size=self._update_button_text_size)
             
         except Exception as e:
             logger.warning(f"Error providing selection feedback: {e}")
@@ -286,7 +344,8 @@ class FormPanel(BoxLayout):
             for field_name, widget_data in self.form_widgets.items():
                 button = widget_data['button']
                 button.text = "?"
-                button.background_color = COLOR_SECONDARY
+                button.background_color = COLOR_UNSELECTED
+                button.color = COLOR_TEXT
                 widget_data['current_value'] = "?"
             
             # Update application state

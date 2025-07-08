@@ -107,18 +107,21 @@ FONT_SIZE_LARGE = 18
 FONT_SIZE_MEDIUM = 14
 FONT_SIZE_SMALL = 12
 
-BUTTON_HEIGHT = 50
-BUTTON_WIDTH_TOUCH = 200  # Minimum width for touch buttons
-DROPDOWN_HEIGHT = 40
-SPACING = 10
-PADDING = 20
+BUTTON_HEIGHT = 35  # Much smaller for compact layout
+BUTTON_WIDTH_TOUCH = 200  # Smaller width
+DROPDOWN_HEIGHT = 35  # Much smaller dropdown height
+SPACING = 4  # Much tighter spacing
+PADDING = 8  # Less padding
 
-# Colors (RGBA)
-COLOR_PRIMARY = (0.2, 0.6, 0.8, 1.0)      # Blue
-COLOR_SECONDARY = (0.9, 0.9, 0.9, 1.0)    # Light gray
+# Colors (RGBA) - Improved contrast and modern styling
+COLOR_PRIMARY = (0.1, 0.4, 0.7, 1.0)      # Darker blue for better contrast
+COLOR_SECONDARY = (0.95, 0.95, 0.95, 1.0) # Very light gray for unselected
 COLOR_BACKGROUND = (1.0, 1.0, 1.0, 1.0)   # White
-COLOR_TEXT = (0.1, 0.1, 0.1, 1.0)         # Dark gray
+COLOR_TEXT = (0.2, 0.2, 0.2, 1.0)         # Dark gray for good readability
+COLOR_TEXT_LIGHT = (0.9, 0.9, 0.9, 1.0)   # Light text for dark backgrounds
 COLOR_ACCENT = (0.8, 0.4, 0.2, 1.0)       # Orange
+COLOR_SELECTED = (0.2, 0.7, 0.3, 1.0)     # Green for selected items
+COLOR_UNSELECTED = (0.8, 0.8, 0.8, 1.0)   # Gray for unselected items
 
 # Logging
 LOG_LEVEL = "INFO"
