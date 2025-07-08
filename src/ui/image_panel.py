@@ -6,6 +6,7 @@ along with the prompt text used to generate it and status indicators.
 """
 
 import logging
+import time
 from io import BytesIO
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
@@ -41,6 +42,7 @@ class ImagePanel(BoxLayout):
         self.app_state = app_state
         self.error_handler = ErrorHandler()
         self.has_generated_image = False  # Track if first image has been generated
+        self.tap_times = []  # For 5-tap exit gesture
         
         # Create UI elements
         self._create_ui()
@@ -81,6 +83,8 @@ class ImagePanel(BoxLayout):
             size_hint=(1, 1),  # Use full container size
             fit_mode="contain"  # Modern way to fit image within bounds while keeping aspect ratio
         )
+        # Bind to touch events for exit gesture detection
+        self.image_widget.bind(on_touch_down=self._on_image_touch)
         
         image_container.add_widget(self.image_widget)
         
@@ -406,3 +410,52 @@ class ImagePanel(BoxLayout):
         except Exception as e:
             self.error_handler.handle_error(e, "Error triggering image regeneration")
             self.app_state.set_generating_image(False)
+    
+    def _on_image_touch(self, instance, touch):
+        """Handle touch events on the image for exit pattern detection."""
+        if instance.collide_point(*touch.pos):
+            current_time = time.time()
+            self.tap_times.append(current_time)
+            # Keep only the 5 most recent taps
+            if len(self.tap_times) > 5:
+                self.tap_times.pop(0)
+            # Check if we have 5 taps and they all occurred within 5 seconds
+            if len(self.tap_times) == 5 and (current_time - self.tap_times[0] <= 5.0):
+                logger.info("Exit pattern detected: 5 taps within 5 seconds")
+                self._exit_fullscreen()
+                self.tap_times = []
+            return True  # Indicate that the touch was handled
+        return False
+    
+    def _exit_fullscreen(self):
+        """Exit the application for troubleshooting."""
+        logger.info("Exit pattern detected - preparing to exit application")
+        
+        # Show confirmation message and exit when touched
+        def show_exit_message(dt):
+            from kivy.uix.label import Label
+            from kivy.uix.popup import Popup
+            from kivy.app import App
+            
+            content = Label(text='Touch anywhere to exit application')
+            popup = Popup(
+                title='Exiting Application',
+                content=content,
+                size_hint=(0.6, 0.3),
+                auto_dismiss=False
+            )
+            
+            # Exit the app when the popup is touched
+            def on_popup_touch(instance, touch):
+                if popup.content.collide_point(*touch.pos):
+                    logger.info("User confirmed exit - stopping application")
+                    popup.dismiss()
+                    # Schedule app exit on next frame
+                    Clock.schedule_once(lambda dt: App.get_running_app().stop(), 0.1)
+                    return True
+                return False
+            
+            popup.content.bind(on_touch_down=on_popup_touch)
+            popup.open()
+        
+        Clock.schedule_once(show_exit_message, 0.5)
