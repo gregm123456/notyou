@@ -1,0 +1,28 @@
+def generate_base64_image(image_prompt):
+   print("Calling txt2img API...")
+   payload = {
+       "prompt": image_prompt,
+       "negative_prompt": NEGATIVE_IMAGE_PROMPT,
+       "seed": -1,
+       "steps": 5,
+       "width": 480,
+       "height": 480,
+       "cfg_scale": 1.5,
+       "sampler_name": "DPM++ 2M Karras",
+       "n_iter": 1,
+       "batch_size": 1
+   }
+   image_path = call_txt2img_api(**payload)
+   return image_path
+
+
+
+
+def call_txt2img_api(**payload):
+   print("Calling txt2img API...")
+   response = call_api('sdapi/v1/txt2img', **payload)
+   for index, image in enumerate(response.get('images')):
+       save_path = os.path.join(image_directory, f'txt2img-{timestamp()}-{index}.png')
+       decode_and_save_base64(image, save_path)
+   last_image_path = os.path.join(image_directory, f'txt2img-{timestamp()}-{len(response.get("images"))-1}.png')
+   return last_image_path
