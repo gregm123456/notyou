@@ -8,6 +8,11 @@ WINDOW_WIDTH = 1024
 WINDOW_HEIGHT = 600
 FULLSCREEN = True  # Set to True for kiosk mode
 
+# Kiosk Display Configuration
+HIDE_CURSOR = True  # Hide mouse cursor in kiosk mode
+DISABLE_SCREENSAVER = True  # Disable screen blanking
+AUTO_RESTART = True  # Auto-restart if application crashes
+
 # Image Display Settings
 IMAGE_SIZE = 512  # Display size for generated images
 IMAGE_PANEL_WIDTH_RATIO = 0.45  # Left panel takes 45% of width
@@ -128,11 +133,14 @@ COLOR_SELECTED = (0.2, 0.7, 0.3, 1.0)     # Green for selected items
 COLOR_UNSELECTED = (0.8, 0.8, 0.8, 1.0)   # Gray for unselected items
 
 # Logging
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "WARNING"  # Reduced from INFO to minimize console output
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 LOG_FILE = "logs/notyou.log"
 LOG_MAX_BYTES = 10 * 1024 * 1024  # 10MB
 LOG_BACKUP_COUNT = 5
+
+# Kivy Logging Settings
+KIVY_LOG_LEVEL = "warning"  # Suppress debug/info messages from Kivy
 
 # Paths
 ASSETS_PATH = "assets"

@@ -1,0 +1,20 @@
+[Unit]
+Description=Not You Art Installation Kiosk
+After=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+User=notyou
+Group=notyou
+WorkingDirectory=/home/notyou/notyou
+Environment=DISPLAY=:0
+Environment=SDL_VIDEODRIVER=x11
+Environment=KIVY_WINDOW=sdl2
+ExecStartPre=/bin/bash -c 'xset s off; xset -dpms; xset s noblank'
+ExecStart=/home/notyou/notyou/start_kiosk.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

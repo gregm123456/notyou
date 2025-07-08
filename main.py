@@ -16,6 +16,26 @@ from pathlib import Path
 project_root = Path(__file__).parent.absolute()
 sys.path.insert(0, str(project_root))
 
+# Configure environment for Raspberry Pi kiosk display
+os.environ['KIVY_WINDOW'] = 'sdl2'
+os.environ['KIVY_GL_BACKEND'] = 'gl'
+
+# Optimize input handling for Wayland/Xwayland to reduce xinput warnings
+# This tells Kivy to use specific input providers instead of auto-detection
+# which reduces the number of xinput calls that generate warnings on Wayland
+os.environ['KIVY_INPUT_PROVIDER'] = 'mouse,keyboard'
+
+# Reduce Kivy logging noise
+os.environ['KIVY_LOG_LEVEL'] = 'warning'
+# Force SDL2 to use X11 backend to avoid Wayland warnings
+os.environ['SDL_VIDEODRIVER'] = 'x11'
+# Disable xinput warnings
+os.environ['KIVY_LOG_LEVEL'] = 'warning'
+# Suppress SDL audio warnings
+os.environ['SDL_AUDIODRIVER'] = 'pulse'
+# Force X11 for better compatibility
+os.environ['GDK_BACKEND'] = 'x11'
+
 import kivy
 from kivy.app import App
 from kivy.clock import Clock
@@ -29,6 +49,14 @@ Config.set('graphics', 'width', str(WINDOW_WIDTH))
 Config.set('graphics', 'height', str(WINDOW_HEIGHT))
 Config.set('graphics', 'resizable', False)
 Config.set('graphics', 'borderless', str(FULLSCREEN))
+# Add proper fullscreen setting
+Config.set('graphics', 'fullscreen', '1' if FULLSCREEN else '0')
+
+# Disable multitouch emulation (right-click circle) for kiosk
+Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+
+# Configure logging to reduce verbosity
+Config.set('kivy', 'log_level', 'warning')
 
 from src.utils.logging import setup_logging
 from src.utils.error_handling import ErrorHandler
@@ -51,6 +79,10 @@ class NotYouApp(App):
             main_screen = MainScreen()
             print("Main screen created successfully")
             
+            # Force fullscreen mode after window creation
+            if FULLSCREEN:
+                Clock.schedule_once(self.force_fullscreen, 0.5)
+            
             # Schedule error recovery check
             Clock.schedule_interval(self.check_health, 30.0)  # Every 30 seconds
             
@@ -64,6 +96,20 @@ class NotYouApp(App):
             from kivy.uix.label import Label
             return Label(text="Application Error - Please restart", 
                         font_size=32, halign="center")
+    
+    def force_fullscreen(self, dt):
+        """Force the window to true fullscreen mode."""
+        from kivy.core.window import Window
+        print(f"Forcing fullscreen. Current size: {Window.size}")
+        
+        # Multiple approaches to ensure fullscreen works
+        Window.fullscreen = 'auto'  # Use 'auto' for best platform compatibility
+        
+        # For some Wayland and X11 environments, this helps
+        if hasattr(Window, 'maximize'):
+            Window.maximize()
+        
+        print(f"Fullscreen applied: {Window.fullscreen}")
     
     def check_health(self, dt):
         """Periodic health check for the application."""
