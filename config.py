@@ -6,7 +6,7 @@ Non-sensitive configuration only - secrets go in secrets.py
 # Display Settings
 WINDOW_WIDTH = 1024
 WINDOW_HEIGHT = 600
-FULLSCREEN = False  # Set to True for kiosk mode
+FULLSCREEN = True  # Set to True for kiosk mode
 
 # Image Display Settings
 IMAGE_SIZE = 512  # Display size for generated images

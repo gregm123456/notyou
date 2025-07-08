@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Scratch directory for development
+scratch/
+
 # Generated images archive (not checked into git)
 generated_images/
 
