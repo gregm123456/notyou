@@ -14,6 +14,11 @@ The name "Not You" emphasizes that no demographic form can fully capture the com
 - Power supply and optional network connectivity
 - Appropriate enclosure for kiosk presentation
 
+### Development Environment
+- Development should be conducted on larger displays with the application window sized to exactly 1024x600 pixels
+- This ensures pixel-perfect development matching the target touchscreen resolution
+- UI elements must be designed and tested at this exact resolution to guarantee proper display on the installation hardware
+
 ### Software Architecture
 - Python 3.11.2 application
 - Kivy framework for touchscreen UI
@@ -96,10 +101,12 @@ The name "Not You" emphasizes that no demographic form can fully capture the com
 - Implement basic application shell with error handling
 
 ### Phase 2: UI Development
-- Create main application window and kiosk mode
-- Design and implement form elements
-- Implement image display panel
-- Create visual feedback elements
+- Create main application window sized to exactly 1024x600 pixels for development consistency
+- Configure kiosk mode for full-screen deployment
+- Design and implement form elements optimized for 1024x600 resolution
+- Implement image display panel with proper scaling for target resolution
+- Create visual feedback elements sized appropriately for touchscreen interaction
+- Test all UI elements at target resolution to ensure proper display on installation hardware
 
 ### Phase 3: API Integration
 - Implement AUTOMATIC1111 authentication mechanism (username:password)
