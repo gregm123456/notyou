@@ -121,8 +121,9 @@ class MainScreen(BoxLayout):
     def _trigger_image_generation(self):
         """Trigger image generation based on current form data."""
         try:
-            # Cancel any pending requests
+            # Cancel any pending requests and reset generating state
             self.api_client.cancel_pending_requests()
+            self.app_state.set_generating_image(False)
             
             # Get current prompt from state
             prompt = self.app_state.get_current_prompt()
