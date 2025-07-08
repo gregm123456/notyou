@@ -36,10 +36,11 @@ The name "Not You" emphasizes that no demographic form can fully capture the com
 - Visual feedback elements
 
 ### 3. API Integration Layer
-- Authentication handler
-- Request formatting
-- Response processing
+- Authentication handler (username:password for AUTOMATIC1111)
+- Request formatting and queue management
+- Response processing (base64 image decoding)
 - Error handling and retries
+- Request cancellation for rapid form changes
 
 ### 4. Configuration System
 - User interface settings
@@ -62,11 +63,13 @@ The name "Not You" emphasizes that no demographic form can fully capture the com
 - Clear visual indication of current selections
 
 ### User Flow
-1. User approaches kiosk displaying a placeholder image and form with default values
-2. User changes any demographic selection using touch interface
-3. System automatically generates a new image based on selections (3-4 second process)
-4. Updated image appears with the prompt text used to generate it
-5. User can continue modifying selections to see different results
+1. User approaches kiosk displaying a placeholder image and form with all fields unselected (showing "?" values)
+2. As soon as the user selects ANY first form field value, image generation is triggered automatically
+3. Any subsequent change to any field value will trigger a new image generation (3-4 second process)
+4. If user makes rapid form changes, each new change moves to the front of the queue; any previously-queued unfulfilled image generations are abandoned
+5. Updated image appears with the prompt text used to generate it
+6. User can continue modifying selections to see different results
+7. No field is required - images will generate based on any combination of selected values
 
 ### Form Elements
 - All interactions via touch selection (no keyboard input)
@@ -76,12 +79,13 @@ The name "Not You" emphasizes that no demographic form can fully capture the com
 
 ## Data Flow
 
-1. **User Input**: Demographics form selections
-2. **Mapping Layer**: Converts selections to appropriate prompt text based on configuration
-3. **Prompt Construction**: Assembles prompt with prepended/appended text and formatting
-4. **API Request**: Sends constructed prompt to Stable Diffusion API with authentication
-5. **Image Processing**: Receives and processes generated image
-6. **Display Update**: Shows new image and updates associated information
+1. **User Input**: Demographics form selections (any combination of fields, none required)
+2. **Queue Management**: New selections cancel any pending incomplete image generation requests
+3. **Mapping Layer**: Converts selections to appropriate prompt text based on configuration
+4. **Prompt Construction**: Assembles prompt with prepended/appended text and formatting
+5. **API Request**: Sends constructed prompt to AUTOMATIC1111 Stable Diffusion API with username:password authentication
+6. **Image Processing**: Receives and processes generated image (base64 decoded)
+7. **Display Update**: Shows new image and updates associated information
 
 ## Technical Implementation Plan
 
@@ -98,16 +102,18 @@ The name "Not You" emphasizes that no demographic form can fully capture the com
 - Create visual feedback elements
 
 ### Phase 3: API Integration
-- Implement authentication mechanism
+- Implement AUTOMATIC1111 authentication mechanism (username:password)
 - Create prompt construction utilities
-- Develop API client with error handling and retries
+- Develop API client with queue management and request cancellation
+- Implement base64 image decoding and processing
 - Test integration with mock responses
 
 ### Phase 4: Core Logic
-- Implement form-to-prompt mapping
-- Create image generation workflow
-- Develop state management system
+- Implement form-to-prompt mapping for specific demographic categories
+- Create real-time image generation workflow with queue management
+- Develop state management system for form selections
 - Implement configuration loading/saving
+- Add request cancellation logic for rapid form changes
 
 ### Phase 5: Optimization and Refinement
 - Optimize for performance on Raspberry Pi
@@ -142,7 +148,8 @@ The name "Not You" emphasizes that no demographic form can fully capture the com
 │   │   └── image_panel.py   # Image display panel
 │   ├── api/                 # API integration
 │   │   ├── __init__.py
-│   │   ├── client.py        # API client implementation
+│   │   ├── client.py        # AUTOMATIC1111 API client implementation
+│   │   ├── queue_manager.py # Request queue and cancellation management
 │   │   └── prompt_builder.py  # Prompt construction utilities
 │   ├── utils/               # Utility functions
 │   │   ├── __init__.py
@@ -159,29 +166,64 @@ The name "Not You" emphasizes that no demographic form can fully capture the com
 
 ## Demographics Form Design
 
-The demographics form will include the following categories (subject to refinement):
+The demographics form will include the following categories with specific values designed to explore traditional demographic biases:
 
-1. **Age Range**: Child, Teen, Young Adult, Middle-Aged, Senior
-2. **Gender Identity**: Various options covering a spectrum
-3. **Ethnicity/Race**: Multiple selections reflecting diverse backgrounds
-4. **Occupation/Role**: Categories of work or social roles
-5. **Style/Appearance**: Various aesthetic presentations
+1. **Age**: Child, Teen, Young Adult, Middle-Aged, Senior
+2. **Gender**: Male, Female  
+3. **Ethnicity**: White, Asian, American Indian, Black or African American, Hispanic Latino or Spanish origin, Middle Eastern or North African, Native Hawaiian or Other Pacific Islander, Other
+4. **Education**: Some schooling, high school, college, graduate / professional degree
+5. **Employment status**: Unemployed, student, part-time, full-time, retired
+6. **Income**: $0–$24,999, $25,000–$49,999, $50,000–$99,999, $100,000–$199,999, $200,000+
 
-Each category will map to appropriate descriptors for image generation prompts, potentially with varying weights or modifiers.
+**Important Notes:**
+- Each field will have an empty/unselected/unset value choice (displayed as "?")
+- No field is required - images will generate based on any combination of selected values
+- Each category will map to appropriate descriptors for image generation prompts, potentially with varying weights or modifiers
+
+## Real-Time Image Generation System
+
+### Responsive Queue Management
+- **Immediate Trigger**: Image generation starts as soon as any first form field is selected
+- **Real-time Updates**: Every form field change triggers new image generation
+- **Queue Priority**: New requests immediately cancel any pending incomplete requests
+- **No Required Fields**: Images generate from any combination of selected demographic values
+- **Rapid Response**: System handles quick successive form changes by abandoning queued requests
+
+### Request Lifecycle
+1. User selects/changes any form field
+2. System cancels any pending incomplete image generation request
+3. New request is queued and sent to AUTOMATIC1111 API immediately
+4. Base64 image response is decoded and displayed
+5. Process repeats for any subsequent form changes
 
 ## API Integration
 
-### Stable Diffusion API Integration
-- Authentication using API keys stored in secrets.py
-- Request formatting following API documentation
+### AUTOMATIC1111 Stable Diffusion API Integration
+- Authentication using username:password format (stored in secrets.py)
+- Request structure: `requests.post(url=f'{URL}/sdapi/v1/txt2img', json=payload, auth=('username', 'password'))`
+- Base64 image response handling and decoding
+- Queue management to cancel pending requests on new form changes
 - Handling rate limiting and quota constraints
 - Implementing retry logic for failed requests
 
 ### Prompt Engineering
 - Template system for consistent prompt structure
 - Mapping form selections to effective prompt language
-- Configuration for prepended/appended text
+- Configuration for prepended/appended text and negative prompts
 - Support for syntax modifiers (parentheses for emphasis, brackets for de-emphasis)
+- Dynamic prompt construction based on any combination of selected demographic values
+
+## Configuration and Security
+
+### File Organization
+- **config.py**: Non-sensitive configuration settings (API URLs, image parameters, prompt templates)
+- **secrets.py**: Sensitive authentication data (AUTOMATIC1111 username:password)
+- **secrets.py** is included in .gitignore to prevent credentials from being committed to the public repository
+
+### AUTOMATIC1111 Setup
+- The stable diffusion service must be launched with: `--api-auth username:password`
+- Authentication credentials are stored in secrets.py and loaded at runtime
+- API endpoint: `/sdapi/v1/txt2img`
 
 ## Testing Strategy
 
