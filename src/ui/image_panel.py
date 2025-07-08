@@ -16,7 +16,7 @@ from kivy.clock import Clock
 
 from config import (
     IMAGE_SIZE, PLACEHOLDER_IMAGE, COLOR_BACKGROUND, COLOR_TEXT,
-    COLOR_PRIMARY, PADDING, SPACING
+    COLOR_PRIMARY, PADDING, SPACING, GENERATED_IMAGES_PATH, MAX_ARCHIVED_IMAGES
 )
 from src.utils.error_handling import ErrorHandler
 
@@ -75,15 +75,11 @@ class ImagePanel(BoxLayout):
         # The actual image widget
         self.image_widget = Image(
             source=PLACEHOLDER_IMAGE,
-            size_hint=(None, None),
-            size=(IMAGE_SIZE, IMAGE_SIZE),
-            pos_hint={'center_x': 0.5, 'center_y': 0.5}
+            size_hint=(1, 1),  # Use full container size
+            fit_mode="contain"  # Modern way to fit image within bounds while keeping aspect ratio
         )
         
-        # Add centering widget
-        centering_widget = Widget()
-        centering_widget.add_widget(self.image_widget)
-        image_container.add_widget(centering_widget)
+        image_container.add_widget(self.image_widget)
         
         self.add_widget(image_container)
     
@@ -158,51 +154,64 @@ class ImagePanel(BoxLayout):
         """Update the displayed image."""
         try:
             logger.info(f"Image panel: Updating image with data: {type(image_data)}")
+            logger.info(f"Image panel: image_data is truthy: {bool(image_data)}")
             if image_data:
                 logger.info(f"Image panel: Image data size: {len(image_data) if isinstance(image_data, bytes) else 'N/A'}")
                 
                 # Convert image data to displayable format
                 if isinstance(image_data, bytes):
-                    # Create a temporary file-like object
-                    image_stream = BytesIO(image_data)
-                    
-                    # Load image from stream
-                    # Note: Kivy requires a file path, so we'll save temporarily
-                    import tempfile
+                    # Save to archive instead of temp file
                     import os
+                    import datetime
                     
-                    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
-                        temp_file.write(image_data)
-                        temp_path = temp_file.name
+                    # Create archive directory if it doesn't exist
+                    archive_dir = "generated_images"
+                    os.makedirs(archive_dir, exist_ok=True)
                     
-                    # Also save a copy for debugging (don't delete this one)
-                    import shutil
-                    debug_path = "/tmp/debug_image.png"
-                    shutil.copy2(temp_path, debug_path)
-                    logger.info(f"Image panel: Debug copy saved to: {debug_path}")
+                    # Create filename with timestamp
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # Include milliseconds
+                    archive_path = os.path.join(archive_dir, f"portrait_{timestamp}.png")
                     
-                    # Use the debug path instead of temp path to avoid cleanup issues
-                    self.image_widget.source = debug_path
+                    # Save image to archive
+                    with open(archive_path, 'wb') as f:
+                        f.write(image_data)
                     
-                    # Force reload of the image
-                    self.image_widget.reload()
+                    logger.info(f"Image panel: Image saved to archive: {archive_path}")
                     
-                    # Force canvas redraw
-                    self.image_widget.canvas.ask_update()
-                    
-                    logger.info(f"Image panel: Image widget source set to: {debug_path}")
-                    
-                    # Also log widget properties for debugging
-                    logger.info(f"Image widget properties: size={self.image_widget.size}, pos={self.image_widget.pos}, source={self.image_widget.source}")
-                    
-                    # Check if the debug file exists and has content
-                    import os
-                    if os.path.exists(debug_path):
-                        file_size = os.path.getsize(debug_path)
-                        logger.info(f"Image panel: Debug file exists, size: {file_size} bytes")
+                    # Check if the archive file exists and has content
+                    if os.path.exists(archive_path):
+                        file_size = os.path.getsize(archive_path)
+                        logger.info(f"Image panel: Archive file exists, size: {file_size} bytes")
+                        
+                        # Quick check if it's a valid PNG file
+                        try:
+                            with open(archive_path, 'rb') as f:
+                                header = f.read(8)
+                                if header.startswith(b'\x89PNG\r\n\x1a\n'):
+                                    logger.info("Image panel: File has valid PNG header")
+                                else:
+                                    logger.error(f"Image panel: Invalid PNG header: {header}")
+                        except Exception as header_check_error:
+                            logger.error(f"Image panel: Error checking PNG header: {header_check_error}")
                     else:
-                        logger.error(f"Image panel: Debug file does not exist: {debug_path}")
+                        logger.error(f"Image panel: Archive file was not created: {archive_path}")
                         return
+                    
+                    # Update image source to use archive file (use absolute path)
+                    absolute_archive_path = os.path.abspath(archive_path)
+                    logger.info(f"Image panel: Setting image source to: {absolute_archive_path}")
+                    
+                    # Schedule image update on main thread
+                    def update_image_source(dt):
+                        logger.info(f"Image panel: Actually setting source to: {absolute_archive_path}")
+                        self.image_widget.source = absolute_archive_path
+                        self.image_widget.nocache = True  # Prevent caching issues
+                        logger.info(f"Image panel: Source set, widget.source = {self.image_widget.source}")
+                        # Force reload and canvas update
+                        self.image_widget.reload()
+                        self.image_widget.canvas.ask_update()
+                    
+                    Clock.schedule_once(update_image_source, 0)
                     
                     # Add a small delay and check if image loaded
                     def check_image_loaded(dt):
@@ -215,25 +224,15 @@ class ImagePanel(BoxLayout):
                     
                     Clock.schedule_once(check_image_loaded, 0.5)
                     
-                    logger.info(f"Image panel: Image widget source set to: {self.image_widget.source}")
-                    
-                    # Schedule cleanup of temp file after a longer delay to ensure display
-                    Clock.schedule_once(
-                        lambda dt: self._cleanup_temp_file(temp_path), 
-                        10.0  # Wait 10 seconds before cleanup
-                    )
-                    
-                elif isinstance(image_data, str):
-                    # Assume it's a file path
-                    self.image_widget.source = image_data
-                
-                logger.info("Image updated successfully")
+                    logger.info("Image updated successfully")
             else:
                 # Reset to placeholder
+                logger.info("Image panel: No image data provided, resetting to placeholder")
                 self.image_widget.source = PLACEHOLDER_IMAGE
                 
         except Exception as e:
             self.error_handler.handle_error(e, "Error updating image")
+            logger.error(f"Image panel: Exception in _update_image: {e}")
             self.image_widget.source = PLACEHOLDER_IMAGE
     
     def _cleanup_temp_file(self, file_path):

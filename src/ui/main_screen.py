@@ -57,23 +57,7 @@ class MainScreen(BoxLayout):
         # Bind state changes to UI updates
         self.app_state.bind_callback(self._on_state_change)
         
-        # Test image generation (temporary for debugging)
-        from kivy.clock import Clock
-        Clock.schedule_once(self._test_image_generation, 3.0)  # Wait 3 seconds for UI to be ready
-        
         logger.info("Main screen initialized")
-    
-    def _test_image_generation(self, dt):
-        """Test image generation with a simple prompt."""
-        try:
-            logger.info("Testing image generation with form data")
-            
-            # Only set form data - let the form mapping generate the prompt
-            test_form_data = {"gender": "Male"}
-            self.app_state.set_form_data(test_form_data)
-            
-        except Exception as e:
-            logger.error(f"Error in test image generation: {e}")
     
     def _update_background(self, instance, value):
         """Update background rectangle size."""
