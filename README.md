@@ -1,4 +1,11 @@
+
 # Not You - Interactive Art Installation
+
+## Project Demo
+
+[![Watch the demo video](https://img.youtube.com/vi/92l2He1RtIs/0.jpg)](https://youtu.be/92l2He1RtIs?si=-6kF_NaiR1lRc9Ml)
+
+See the project in action: click the image above to watch the YouTube demo.
 
 "Not You" is an interactive art installation that explores the limitations of demographic forms and inherent biases in AI-generated images. Visitors interact with a demographics form, and the system generates photographic-style portraits using Stable Diffusion API based on their selections.
 
