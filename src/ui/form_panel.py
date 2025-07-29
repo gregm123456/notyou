@@ -198,6 +198,9 @@ class FormPanel(BoxLayout):
                 max_height=300  # Limit dropdown height
             )
 
+            # Slightly reduce dropdown option height for a more compact menu
+            DROPDOWN_OPTION_HEIGHT = int(BUTTON_HEIGHT * 0.95)  # ~18% shorter
+
             # Add options to dropdown
             for option in options:
                 if option == "?":
@@ -212,7 +215,7 @@ class FormPanel(BoxLayout):
                 option_button = Button(
                     text=option,
                     size_hint_y=None,
-                    height=BUTTON_HEIGHT,
+                    height=DROPDOWN_OPTION_HEIGHT,
                     background_color=bg_color,
                     color=text_color,
                     font_size=FONT_SIZE_SMALL,
