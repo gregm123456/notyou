@@ -303,17 +303,19 @@ class ImagePanel(BoxLayout):
             self.error_handler.handle_error(e, "Error updating prompt text")
     
     def _update_status(self, is_generating):
-        """Update the status indicator."""
+        """Update the status indicator and remix button state."""
         try:
             if is_generating:
                 self.status_label.text = "Generating..."
                 self.status_label.color = COLOR_PRIMARY
+                self.remix_button.disabled = True  # Disable remix while generating
                 # Add a simple animation for generating status
                 self._start_generating_animation()
             else:
                 self.status_label.text = "Ready"
                 self.status_label.color = COLOR_TEXT
                 self.status_label.font_size = 40  # Double the previous largest size
+                self.remix_button.disabled = False  # Enable remix when ready
                 self._stop_generating_animation()
         except Exception as e:
             self.error_handler.handle_error(e, "Error updating status")
