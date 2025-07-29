@@ -54,7 +54,7 @@ class FormPanel(BoxLayout):
         try:
             # Create title
             title_label = Label(
-                text="Demographics Form",
+                text="Not You!",
                 font_size=FONT_SIZE_LARGE,
                 color=COLOR_TEXT,
                 size_hint=(1, None),
@@ -67,7 +67,7 @@ class FormPanel(BoxLayout):
             
             # Create instruction text
             instruction_label = Label(
-                text="Select any characteristics to generate a portrait.\nNo fields are required.",
+                text="Fill out the form. Who does the machine see?",
                 font_size=FONT_SIZE_SMALL,
                 color=COLOR_TEXT,
                 size_hint=(1, None),
