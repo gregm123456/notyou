@@ -94,7 +94,7 @@ class ImagePanel(BoxLayout):
         """Create the prompt text display."""
         self.prompt_label = Label(
             text="Select form options to generate a portrait...",
-            font_size=14,
+            font_size=19,
             color=COLOR_TEXT,
             text_size=(None, None),
             halign='center',
@@ -119,7 +119,7 @@ class ImagePanel(BoxLayout):
         # Status label (left side, takes most space)
         self.status_label = Label(
             text="Ready",
-            font_size=12,
+            font_size=40,  # Double the previous largest size
             color=COLOR_PRIMARY,
             size_hint=(0.6, 1),
             halign='left',
@@ -133,7 +133,7 @@ class ImagePanel(BoxLayout):
         # Remix button (bottom left)
         self.remix_button = Button(
             text="Remix",
-            font_size=FONT_SIZE_SMALL,
+            font_size=FONT_SIZE_LARGE,
             size_hint=(0.2, 1),
             height=BUTTON_HEIGHT,
             background_color=COLOR_ACCENT,
@@ -308,34 +308,55 @@ class ImagePanel(BoxLayout):
             if is_generating:
                 self.status_label.text = "Generating..."
                 self.status_label.color = COLOR_PRIMARY
-                
                 # Add a simple animation for generating status
                 self._start_generating_animation()
             else:
                 self.status_label.text = "Ready"
                 self.status_label.color = COLOR_TEXT
+                self.status_label.font_size = 40  # Double the previous largest size
                 self._stop_generating_animation()
-                
         except Exception as e:
             self.error_handler.handle_error(e, "Error updating status")
     
     def _start_generating_animation(self):
-        """Start animation for generating status."""
+        """Start animation for generating status with color and font size."""
         try:
-            # Simple text animation
+            # Simple text animation (dots)
             self.animation_dots = 0
             self.animation_event = Clock.schedule_interval(
                 self._animate_generating_text, 
                 0.5
             )
+
+            # Animate color and font size for dynamic effect
+            from kivy.animation import Animation
+            # Animate color between COLOR_PRIMARY and COLOR_ACCENT
+            self.status_label.color = COLOR_PRIMARY
+            self.status_label.font_size = 40  # Start at largest size
+            self.status_anim = Animation(
+                color=COLOR_ACCENT,
+                font_size=40,
+                duration=0.5
+            ) + Animation(
+                color=COLOR_PRIMARY,
+                font_size=32,
+                duration=0.5
+            )
+            self.status_anim.repeat = True
+            self.status_anim.start(self.status_label)
         except Exception as e:
             logger.warning(f"Error starting animation: {e}")
     
     def _stop_generating_animation(self):
-        """Stop the generating animation."""
+        """Stop the generating animation and reset status label style."""
         try:
             if hasattr(self, 'animation_event'):
                 self.animation_event.cancel()
+            if hasattr(self, 'status_anim'):
+                self.status_anim.cancel(self.status_label)
+            # Reset to default style
+            self.status_label.color = COLOR_TEXT
+            self.status_label.font_size = 40  # Keep large for Ready
         except Exception as e:
             logger.warning(f"Error stopping animation: {e}")
     
