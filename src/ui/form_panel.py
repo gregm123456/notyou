@@ -175,39 +175,40 @@ class FormPanel(BoxLayout):
         """Create a dropdown field for selecting options."""
         try:
             options = self.form_mapper.get_field_options(field_name)
-            
+
             # Create main button with better styling
             dropdown_button = Button(
                 text="?",  # Default unselected state
                 size_hint=(1, None),
                 height=BUTTON_HEIGHT,
                 background_color=COLOR_UNSELECTED,
-                color=COLOR_TEXT,
+                color=COLOR_TEXT_LIGHT,  # Make question mark white by default
                 font_size=FONT_SIZE_MEDIUM,
                 bold=True,
                 halign='center',
                 valign='middle',
                 text_size=(None, None)
             )
-            
+
             # Enable text wrapping for the main button
             dropdown_button.bind(size=self._update_button_text_size)
-            
+
             # Create dropdown with improved styling
             dropdown = DropDown(
                 max_height=300  # Limit dropdown height
             )
-            
+
             # Add options to dropdown
             for option in options:
-                # Determine styling for each option
                 if option == "?":
                     bg_color = COLOR_UNSELECTED
-                    text_color = COLOR_TEXT
+                    text_color = COLOR_TEXT_LIGHT  # White
+                    option_bold = True
                 else:
                     bg_color = COLOR_PRIMARY
                     text_color = COLOR_TEXT_LIGHT
-                
+                    option_bold = False
+
                 option_button = Button(
                     text=option,
                     size_hint_y=None,
@@ -215,35 +216,36 @@ class FormPanel(BoxLayout):
                     background_color=bg_color,
                     color=text_color,
                     font_size=FONT_SIZE_SMALL,
+                    bold=option_bold,
                     halign='center',
                     valign='middle',
                     text_size=(None, None)
                 )
-                
+
                 # Enable text wrapping for long options
                 option_button.bind(size=self._update_button_text_size)
-                
+
                 # Bind option selection
                 option_button.bind(
                     on_release=lambda btn, field=field_name, opt=option: 
                     self._on_option_selected(field, opt, dropdown_button, dropdown)
                 )
-                
+
                 dropdown.add_widget(option_button)
-            
+
             # Bind dropdown to main button
             dropdown_button.bind(on_release=dropdown.open)
             dropdown.bind(on_select=lambda instance, value: setattr(dropdown_button, 'text', value))
-            
+
             # Store reference
             self.form_widgets[field_name] = {
                 'button': dropdown_button,
                 'dropdown': dropdown,
                 'current_value': "?"
             }
-            
+
             return dropdown_button
-            
+
         except Exception as e:
             self.error_handler.handle_error(e, f"Error creating dropdown for {field_name}")
             return Button(text=f"Error: {field_name}", background_color=(1, 0, 0, 1))
@@ -278,17 +280,19 @@ class FormPanel(BoxLayout):
             # Change button color and text styling based on selection
             if option == "?":
                 button.background_color = COLOR_UNSELECTED
-                button.color = COLOR_TEXT
+                button.color = COLOR_TEXT_LIGHT  # White
+                button.bold = True
             else:
                 button.background_color = COLOR_SELECTED
                 button.color = COLOR_TEXT_LIGHT
-                
+                button.bold = False
+
             # Keep button height consistent
             button.height = BUTTON_HEIGHT
-                
+
             # Enable text wrapping for the main button
             button.bind(size=self._update_button_text_size)
-            
+
         except Exception as e:
             logger.warning(f"Error providing selection feedback: {e}")
     
@@ -332,14 +336,15 @@ class FormPanel(BoxLayout):
                 button = widget_data['button']
                 button.text = "?"
                 button.background_color = COLOR_UNSELECTED
-                button.color = COLOR_TEXT
+                button.color = COLOR_TEXT_LIGHT  # White
+                button.bold = True
                 widget_data['current_value'] = "?"
-            
+
             # Update application state
             self.app_state.set_form_data({})
             self.app_state.set_current_prompt("")
-            
+
             logger.info("Form reset to default state")
-            
+
         except Exception as e:
             self.error_handler.handle_error(e, "Error resetting form")
